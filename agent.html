@@ -4,9 +4,259 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #0f172a;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            flex-direction: column;
+            color: white;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2rem;
+            margin-bottom: 3rem;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .orb-container {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        /* The core glowing orb */
+        .orb {
+            width: 140px;
+            height: 140px;
+            background: linear-gradient(135deg, #6366f1, #d946ef);
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.4);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 2;
+        }
+
+        .orb::after {
+            content: '';
+            position: absolute;
+            top: -10px; bottom: -10px; left: -10px; right: -10px;
+            background: inherit;
+            border-radius: 50%;
+            filter: blur(25px);
+            opacity: 0.4;
+            transition: opacity 0.4s ease;
+            z-index: 1;
+        }
+
+        /* Ambient animated rings */
+        .ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            transition: all 0.4s ease;
+            box-sizing: border-box;
+            opacity: 0;
+        }
+
+        /* State: Connected but not speaking */
+        .state-connected .orb {
+            box-shadow: 0 0 50px rgba(99, 102, 241, 0.6), inset 0 0 30px rgba(255, 255, 255, 0.6);
+        }
+        .state-connected .orb::after {
+            opacity: 0.6;
+        }
+        
+        /* State: Speaking animations */
+        .state-speaking .orb {
+            animation: pulse-orb 0.8s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #ec4899, #f43f5e);
+            box-shadow: 0 0 60px rgba(236, 72, 153, 0.8), inset 0 0 40px rgba(255, 255, 255, 0.8);
+        }
+        
+        .state-speaking .orb::after {
+            opacity: 1;
+            background: linear-gradient(135deg, #ec4899, #f43f5e);
+            animation: pulse-glow 0.8s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .state-speaking .ring {
+            animation: ripple 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+            border-color: rgba(236, 72, 153, 0.4);
+            opacity: 1;
+        }
+
+        .state-speaking .ring:nth-child(2) {
+            animation-delay: 0.4s;
+        }
+
+        .state-speaking .ring:nth-child(3) {
+            animation-delay: 0.8s;
+        }
+
+        @keyframes pulse-orb {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.15); opacity: 1; }
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(0.6); opacity: 1; border-width: 4px; }
+            100% { transform: scale(1.6); opacity: 0; border-width: 1px; }
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            backdrop-filter: blur(10px);
+            font-size: 0.875rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #64748b;
+            margin-right: 8px;
+            transition: all 0.3s;
+        }
+
+        .state-connected.status-badge {
+            border-color: rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.1);
+            color: #818cf8;
+        }
+        
+        .state-connected.status-badge .status-dot {
+            background-color: #818cf8;
+            box-shadow: 0 0 10px #818cf8;
+        }
+
+        .state-speaking.status-badge {
+            border-color: rgba(236, 72, 153, 0.3);
+            background: rgba(236, 72, 153, 0.1);
+            color: #f472b6;
+        }
+
+        .state-speaking.status-badge .status-dot {
+            background-color: #f472b6;
+            box-shadow: 0 0 10px #f472b6;
+        }
+
+        .widget-wrapper {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100;
+        }
+    </style>
 </head>
 <body>
-    <elevenlabs-convai agent-id="agent_4101kktxgsp8f58aph9cg8zjvmp5"></elevenlabs-convai>
+
+    <h1>ElevenLabs Voice Agent</h1>
+
+    <div class="orb-container" id="avatar">
+        <div class="ring"></div>
+        <div class="ring"></div>
+        <div class="ring"></div>
+        <div class="orb"></div>
+    </div>
+    
+    <div class="status-badge" id="status-badge">
+        <div class="status-dot"></div>
+        <span id="status-text">Disconnected</span>
+    </div>
+
+    <!-- The actual widget from ElevenLabs -->
+    <div class="widget-wrapper">
+        <elevenlabs-convai agent-id="agent_4101kktxgsp8f58aph9cg8zjvmp5"></elevenlabs-convai>
+    </div>
+
     <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const agent = document.querySelector('elevenlabs-convai');
+            const avatar = document.getElementById('avatar');
+            const statusBadge = document.getElementById('status-badge');
+            const statusText = document.getElementById('status-text');
+
+            // Listening to ElevenLabs Convai Web Component Events
+            agent.addEventListener('elevenlabs-convai:call', (event) => {
+                const callStatus = event.detail.status;
+                if (callStatus === 'connected') {
+                    avatar.classList.add('state-connected');
+                    statusBadge.classList.add('state-connected');
+                    statusText.textContent = 'Connected';
+                } else if (callStatus === 'disconnected') {
+                    avatar.classList.remove('state-connected');
+                    avatar.classList.remove('state-speaking');
+                    statusBadge.classList.remove('state-connected');
+                    statusBadge.classList.remove('state-speaking');
+                    statusText.textContent = 'Disconnected';
+                }
+            });
+
+            agent.addEventListener('elevenlabs-convai:speech', (event) => {
+                const speechStatus = event.detail.status;
+                if (speechStatus === 'speaking') {
+                    avatar.classList.add('state-speaking');
+                    statusBadge.classList.add('state-speaking');
+                    statusText.textContent = 'Speaking...';
+                } else {
+                    avatar.classList.remove('state-speaking');
+                    statusBadge.classList.remove('state-speaking');
+                    if (avatar.classList.contains('state-connected')) {
+                        statusText.textContent = 'Connected';
+                    }
+                }
+            });
+
+            // Set up a mutation observer fallback to log potential shadow DOM changes
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes') {
+                        // Check if speaking attribute or class is magically appended
+                        if (agent.hasAttribute('speaking') || agent.getAttribute('data-status') === 'speaking') {
+                            avatar.classList.add('state-speaking');
+                            statusBadge.classList.add('state-speaking');
+                            statusBadge.classList.add('state-connected');
+                            statusText.textContent = 'Speaking...';
+                        }
+                    }
+                });
+            });
+
+            observer.observe(agent, { attributes: true, subtree: true });
+        });
+    </script>
 </body>
 </html>
